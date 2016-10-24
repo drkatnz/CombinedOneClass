@@ -18,7 +18,7 @@ Written for python 2.7 support, not checked with python 3.
 ## Usage example
 ```
 import sys
-sys.path.append('path\to\repository\locally\oneclass')
+sys.path.append('path/to/repository/locally/oneclass')
 import oneclass
 
 occ = oneclass.OneClassClassifier(outlier_fraction=outliers_fraction)
