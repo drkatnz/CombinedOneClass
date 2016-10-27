@@ -59,7 +59,7 @@ class OneClassClassifier(BaseEstimator):
             self.base_classifier.fit(newX[train_indices], newY[train_indices])
             probabilities = self._get_log_probabilities(newX[test_indices])
             
-            thresholds[i] = stats.scoreatpercentile(probabilities, 100 - (100 * self.outlier_fraction))
+            thresholds[i] = stats.scoreatpercentile(probabilities, 100 * self.outlier_fraction)
             
         
         self.threshold = np.mean(thresholds)
@@ -106,7 +106,7 @@ class OneClassClassifier(BaseEstimator):
         if(prob_c_given_x == 0):
             return prob_x_given_a
             
-        print prob_c, prob_c_given_x
+        #print prob_c, prob_c_given_x, math.exp(prob_x_given_a)
         top = math.log(1 - prob_c) + math.log(prob_c_given_x)
         bottom = math.log(prob_c) + math.log(1 - prob_c_given_x)
         
