@@ -39,49 +39,60 @@ class OneClassClassifier(BaseEstimator):
             self.generators[col] = generator
             
     
-        #generate data
-        generated = [None] * len(X)
-        for i in xrange(len(X)):
-            row = [None] * X.shape[1]
-            for col in xrange(X.shape[1]):
-                row[col] = self.generators[col].generate()
-            generated[i] = row
-            
-        #work out the threshold of prob(X|C) using cross validation
-        skf = StratifiedKFold(n_splits=self.cv_folds,\
-            random_state=self.random_state, shuffle=True)
-            
-        newX = np.vstack((X,generated))
-        newY = np.hstack((np.ones(len(X)),np.zeros(len(X))))
+        #generate data		
+		generated = [None] * len(X)
+		for i in xrange(len(X)):
+			row = [None] * X.shape[1]
+			for col in xrange(X.shape[1]):
+				row[col] = self.generators[col].generate()
+			generated[i] = row
+			
+		#work out the threshold of prob(X|C) using cross validation
+		skf = StratifiedKFold(n_splits=self.cv_folds,\
+			random_state=self.random_state, shuffle=True)
+			
+		newX = np.vstack((X,generated))
+		newY = np.hstack((np.ones(len(X)),np.zeros(len(X))))
+	
+		thresholds = [None] * self.cv_folds
+		for i, (train_indices, test_indices) in enumerate(skf.split(newX,newY)):
+			if(~self.density_only):
+				#only train if you need to!
+				self.base_classifier.fit(newX[train_indices], newY[train_indices])
+			probabilities = self._get_log_probabilities(newX[test_indices])
+			
+			thresholds[i] = stats.scoreatpercentile(probabilities, 100 * self.outlier_fraction)
+
+		self.threshold = np.mean(thresholds)
+		
+		#retrain on all the data
+		if(~self.density_only):
+			self.base_classifier.fit(newX,newY)
+
         
-        thresholds = [None] * self.cv_folds
-        for i, (train_indices, test_indices) in enumerate(skf.split(newX,newY)):
-            self.base_classifier.fit(newX[train_indices], newY[train_indices])
-            probabilities = self._get_log_probabilities(newX[test_indices])
-            
-            thresholds[i] = stats.scoreatpercentile(probabilities, 100 * self.outlier_fraction)
-            
-        
-        self.threshold = np.mean(thresholds)
-        
-        #retrain on all the data
-        self.base_classifier.fit(newX,newY)
         
         
-        
+       
     def _get_log_probabilities(self,X):
-        base_classifier_probs = self.base_classifier.predict_proba(X)[:,1]
+		if(self.density_only):
+			base_classifier_probs = None
+		else:
+			base_classifier_probs = self.base_classifier.predict_proba(X)[:,1]
         probabilities = [None] * len(X)
         for i,x in enumerate(X):
-            probabilities[i] = self._prob_x_given_c(x,base_classifier_probs[i])
+            probabilities[i] = self._log_prob_x_given_c(x,base_classifier_probs[i])
             
         return np.array(probabilities)
         
     def _get_probabilities(self,X):
-        base_classifier_probs = self.base_classifier.predict_proba(X)[:,1]
+		if(self.density_only):
+			base_classifier_probs = None
+		else:
+			base_classifier_probs = self.base_classifier.predict_proba(X)[:,1]
+			
         probabilities = [None] * len(X)
         for i,x in enumerate(X):
-            prob = self._prob_x_given_c(x,base_classifier_probs[i])
+            prob = self._log_prob_x_given_c(x,base_classifier_probs[i])
             if(prob == np.inf):
                 prob_outlier = 0
             else:
@@ -90,15 +101,21 @@ class OneClassClassifier(BaseEstimator):
             probabilities[i] = prob_class
             
         return np.array(probabilities)
-            
-    def _prob_x_given_c(self,x,prob_c_given_x):
-        prob_c = 1 - self.proportion_generated
-        prob_x_given_a = 0
+		
+		
+	def _log_prob_x_given_a(self,x):
+		prob_x_given_a = 0
         for col in xrange(x.shape[0]):
             prob_x_given_a = prob_x_given_a + self.generators[col].get_log_probability(x[col])
         
+		return prob_x_given_a
+            
+    def _log_prob_x_given_c(self,x,prob_c_given_x):
+        prob_c = 1 - self.proportion_generated
+		log_prob_x_given_a = self._log_prob_x_given_a(x)
+        
         if(self.density_only):
-            return prob_x_given_a
+            return log_prob_x_given_a
             
         if(prob_c_given_x == 1):
             return np.inf
@@ -110,16 +127,19 @@ class OneClassClassifier(BaseEstimator):
         top = math.log(1 - prob_c) + math.log(prob_c_given_x)
         bottom = math.log(prob_c) + math.log(1 - prob_c_given_x)
         
-        return (top - bottom) + prob_x_given_a
+        return (top - bottom) + log_prob_x_given_a
         
     
         
     
     def predict(self,X):
-        base_classifier_probs = self.base_classifier.predict_proba(X)[:,1]
+		if(self.density_only):
+			base_classifier_probs = None
+		else:
+			base_classifier_probs = self.base_classifier.predict_proba(X)[:,1]
         probabilities = [None] * len(X)
         for i,x in enumerate(X):
-            prob = self._prob_x_given_c(x,base_classifier_probs[i])
+            prob = self._log_prob_x_given_c(x,base_classifier_probs[i])
             if prob >= self.threshold:
                 probabilities[i] = 1
             else:
