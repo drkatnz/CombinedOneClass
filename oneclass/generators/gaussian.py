@@ -5,7 +5,6 @@ Gaussian generators for one-class data generation.
 @author: Kat
 """
 import math
-import scipy.stats as stats
 import numpy as np
 from abstract import RandomizableGenerator,Mean
 
@@ -15,7 +14,17 @@ class GaussianGenerator(RandomizableGenerator,Mean):
         RandomizableGenerator.__init__(self,seed)
         
     def get_probability(self, value):
-        return stats.norm(self.mean,self.stddev).pdf(value)
+        #doing math here for speed increase
+        twopisqrt = math.sqrt(2 * math.pi);
+        left = 1 / (self.stddev * twopisqrt);
+        diffsquared = math.pow((value - self.mean), 2);
+        bottomright = 2 * math.pow(self.stddev, 2);
+        brackets = -1 * (diffsquared / bottomright);
+
+        probx = left * math.exp(brackets);
+
+        return probx;
+
     
     def get_log_probability(self, value):
         probability = self.get_probability(value)
