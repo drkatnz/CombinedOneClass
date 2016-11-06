@@ -18,12 +18,12 @@ import math
 
 class OneClassClassifier(BaseEstimator):
     def __init__(self,base_classifier=DecisionTreeClassifier(),\
-        outlier_fraction=0.1,proportion_generated=0.5,\
+        contamination=0.1,proportion_generated=0.5,\
         cv_folds=10,\
         density_only=False,random_state=0):
             
         self.base_classifier = base_classifier
-        self.outlier_fraction = outlier_fraction
+        self.contamination = contamination
         self.proportion_generated = proportion_generated
         self.density_only = density_only
         self.random_state = random_state
@@ -65,7 +65,7 @@ class OneClassClassifier(BaseEstimator):
                 self.base_classifier.fit(newX[train_indices], newY[train_indices])
             
             probabilities = self._get_log_probabilities(newX[test_indices])                       
-            thresholds[i] = stats.scoreatpercentile(probabilities, 100 * self.outlier_fraction)
+            thresholds[i] = stats.scoreatpercentile(probabilities, 100 * self.contamination)
 
         self.threshold = np.mean(thresholds)
                 
