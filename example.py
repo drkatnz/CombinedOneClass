@@ -12,7 +12,7 @@ clusters_separation = [0,1,2]
 
 # define two or more outlier detection tools to be compared
 classifiers = {    
-    "One-Class": oneclass.OneClassClassifier(outlier_fraction=outliers_fraction,density_only=True)
+    "One-Class": oneclass.OneClassClassifier(contamination=outliers_fraction,density_only=True)
     }
 
 # Compare given classifiers under given settings

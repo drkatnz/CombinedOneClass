@@ -42,7 +42,7 @@ class OneClassClassifier(BaseEstimator):
     
         #generate data        
         totalInstances = len(X) / (1 - self.proportion_generated)
-        generated_len = totalInstances - len(X)
+        generated_len = int(totalInstances - len(X))
         generated = [None] * generated_len
         for i in xrange(generated_len):
             row = [None] * X.shape[1]
