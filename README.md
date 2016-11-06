@@ -21,7 +21,7 @@ import sys
 sys.path.append('path/to/repository/locally/oneclass')
 import oneclass
 
-occ = oneclass.OneClassClassifier(outlier_fraction=outliers_fraction)
+occ = oneclass.OneClassClassifier(contamination=outliers_fraction)
 occ.fit(X)
 
 # will predict 1 for inlier, -1 for outlier
@@ -34,10 +34,10 @@ occ.decision_function(X)
 ### Supported functionality
 
 At this stage just the Gaussian generator is supported for the data generation step. This is the default in WEKA.
+If the standard deviation is zero (all values the same) a dummy generator will be used instead of a gaussian.
 
 ### TODO
 
-- The amount of data generated is always the same as the amount of data supplied (i.e. the probability estimator is always trained on a binary classification problem with balanced data).
 - Weights are not supported.
 - Base classifier has been set to scikit-learn's DecisionTreeClassifier, this should be better optimised.
 - Uniform data generators not supported.

@@ -4,11 +4,12 @@ Abstract interfaces/classes for one-class data generators.
 
 @author: Kat
 """
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from random import Random 
+import math
 
 # Base class for all generators used for one-class classification.
-class Generator(ABCMeta):
+class Generator:
     @abstractmethod
     def get_probability(self, value):
         pass
@@ -52,4 +53,17 @@ class Mean:
     		
     def set_stddev(self, stddev):
         self.stddev = stddev
-		
+	
+
+class DummyGenerator(Generator):
+    def __init__(self, value):
+        self.value = value
+        
+    def get_probability(self, value):
+        return 1
+
+    def get_log_probability(self, value):
+        return math.log(1)
+
+    def generate(self):
+        return self.value	

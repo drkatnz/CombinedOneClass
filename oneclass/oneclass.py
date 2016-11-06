@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
-from generators import gaussian
+from generators import abstract,gaussian
 from scipy import stats
 import math
 
@@ -36,7 +36,12 @@ class OneClassClassifier(BaseEstimator):
         #create the data generators
         self.generators = [None] * X.shape[1]
         for col in xrange(X.shape[1]):
-            generator = gaussian.GaussianGenerator(np.mean(X[:,col]),np.std(X[:,col]))
+            mean = np.mean(X[:,col])
+            stddev = np.std(X[:,col])           
+            if(stddev == 0):
+                generator = abstract.DummyGenerator(mean)
+            else:
+                generator = gaussian.GaussianGenerator(mean,stddev,self.random_state)
             self.generators[col] = generator
         
     
