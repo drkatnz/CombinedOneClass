@@ -18,9 +18,10 @@ class GaussianGenerator(RandomizableGenerator,Mean):
         return stats.norm(self.mean,self.stddev).pdf(value)
     
     def get_log_probability(self, value):
-		probability = self.get_probability(value)
-		if probability == 0:
-			return np.inf;
+        probability = self.get_probability(value)
+        if probability == 0:
+            return np.inf;
+            
         return math.log(probability)
     
     def generate(self):
