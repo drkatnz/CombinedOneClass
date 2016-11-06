@@ -24,7 +24,7 @@ class OneClassClassifier(BaseEstimator):
             
         self.base_classifier = base_classifier
         self.outlier_fraction = outlier_fraction
-        self.proportion_generated = 0.5 #temp setting until generation fixed
+        self.proportion_generated = proportion_generated
         self.density_only = density_only
         self.random_state = random_state
         self.cv_folds = cv_folds
@@ -41,8 +41,10 @@ class OneClassClassifier(BaseEstimator):
         
     
         #generate data        
-        generated = [None] * len(X)
-        for i in xrange(len(X)):
+        totalInstances = len(X) / (1 - self.proportion_generated)
+        generated_len = totalInstances - len(X)
+        generated = [None] * generated_len
+        for i in xrange(generated_len):
             row = [None] * X.shape[1]
             for col in xrange(X.shape[1]):
                 row[col] = self.generators[col].generate()
