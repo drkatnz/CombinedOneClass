@@ -15,21 +15,21 @@ class GaussianGenerator(RandomizableGenerator,Mean):
         
     def get_probability(self, value):
         #doing math here for speed increase
-        twopisqrt = math.sqrt(2 * math.pi);
-        left = 1 / (self.stddev * twopisqrt);
-        diffsquared = math.pow((value - self.mean), 2);
-        bottomright = 2 * math.pow(self.stddev, 2);
-        brackets = -1 * (diffsquared / bottomright);
+        twopisqrt = math.sqrt(2 * math.pi)
+        left = 1 / (self.stddev * twopisqrt)
+        diffsquared = math.pow((value - self.mean), 2)
+        bottomright = 2 * math.pow(self.stddev, 2)
+        brackets = -1 * (diffsquared / bottomright)
 
-        probx = left * math.exp(brackets);
+        probx = left * math.exp(brackets)
 
-        return probx;
+        return probx
 
     
     def get_log_probability(self, value):
         probability = self.get_probability(value)
         if probability == 0:
-            return np.inf;
+            return np.inf
             
         return math.log(probability)
     

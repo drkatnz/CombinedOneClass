@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
-from generators import abstract,gaussian
+from generators import abstract,gaussian,discrete
 from scipy import stats
 import math
 
@@ -20,7 +20,7 @@ class OneClassClassifier(BaseEstimator):
     def __init__(self,base_classifier=DecisionTreeClassifier(),\
         contamination=0.1,proportion_generated=0.5,\
         cv_folds=10,\
-        density_only=False,random_state=0):
+        density_only=False,random_state=0,discrete_threshold=-1):
             
         self.base_classifier = base_classifier
         self.contamination = contamination
@@ -28,6 +28,7 @@ class OneClassClassifier(BaseEstimator):
         self.density_only = density_only
         self.random_state = random_state
         self.cv_folds = cv_folds
+        self.discrete_threshold = discrete_threshold
         
         self.threshold = 0.5
     
@@ -36,12 +37,24 @@ class OneClassClassifier(BaseEstimator):
         #create the data generators
         self.generators = [None] * X.shape[1]
         for col in xrange(X.shape[1]):
-            mean = np.mean(X[:,col])
-            stddev = np.std(X[:,col])           
-            if(stddev == 0):
-                generator = abstract.DummyGenerator(mean)
+            if(self.discrete_threshold > 1):
+                discrete_gen = discrete.DiscreteGenerator(X[:,col])
+                if(discrete_gen.total_keys < self.discrete_threshold):
+                    generator = discrete_gen
+                else:
+                    mean = np.mean(X[:,col])
+                    stddev = np.std(X[:,col])           
+                    if(stddev == 0):
+                        generator = abstract.DummyGenerator(mean)
+                    else:
+                        generator = gaussian.GaussianGenerator(mean,stddev,self.random_state)
             else:
-                generator = gaussian.GaussianGenerator(mean,stddev,self.random_state)
+                mean = np.mean(X[:,col])
+                stddev = np.std(X[:,col])           
+                if(stddev == 0):
+                    generator = abstract.DummyGenerator(mean)
+                else:
+                    generator = gaussian.GaussianGenerator(mean,stddev,self.random_state)
             self.generators[col] = generator
         
     
@@ -69,7 +82,7 @@ class OneClassClassifier(BaseEstimator):
                 #only train if you need to!
                 self.base_classifier.fit(newX[train_indices], newY[train_indices])
             
-            probabilities = self._get_log_probabilities(newX[test_indices])                       
+            probabilities = self._get_probabilities(newX[test_indices])                       
             thresholds[i] = stats.scoreatpercentile(probabilities, 100 * self.contamination)
 
         self.threshold = np.mean(thresholds)
@@ -97,8 +110,8 @@ class OneClassClassifier(BaseEstimator):
         
         probabilities = [None] * len(X)
         for i,prob in enumerate(log_probs):
-            if(prob == np.inf):
-                prob_outlier = 0
+            if(prob == 0):
+                prob_outlier = 1
             else:
                 prob_outlier = 1 / (1 + math.exp(prob - self.threshold))
             prob_class = 1 - prob_outlier
@@ -124,10 +137,10 @@ class OneClassClassifier(BaseEstimator):
             
         #cover edge cases
         if(prob_c_given_x == 1):
-            return np.inf
+            return log_prob_x_given_a
             
         if(prob_c_given_x == 0):
-            return log_prob_x_given_a
+            return 0
             
         #finally, calculate probability
         top = math.log(1 - prob_c) + math.log(prob_c_given_x)
@@ -137,10 +150,10 @@ class OneClassClassifier(BaseEstimator):
         
     
     def predict(self,X):
-        log_probs = self._get_log_probabilities(X)            
+        probs = self._get_probabilities(X)            
         
         probabilities = [None] * len(X)
-        for i,prob in enumerate(log_probs):
+        for i,prob in enumerate(probs):
             if prob >= self.threshold:
                 probabilities[i] = 1
             else:

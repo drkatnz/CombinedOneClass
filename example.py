@@ -3,6 +3,8 @@ from scipy import stats
 
 from oneclass import oneclass
 
+from sklearn.tree import DecisionTreeClassifier
+
 rng = np.random.RandomState(42)
 
 # Example settings
@@ -12,7 +14,7 @@ clusters_separation = [0,1,2]
 
 # define two or more outlier detection tools to be compared
 classifiers = {    
-    "One-Class": oneclass.OneClassClassifier(contamination=outliers_fraction,density_only=True)
+    "One-Class": oneclass.OneClassClassifier(contamination=outliers_fraction,base_classifier=DecisionTreeClassifier(max_depth=2),density_only=True)
     }
 
 # Compare given classifiers under given settings
